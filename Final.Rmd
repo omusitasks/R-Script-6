@@ -1,0 +1,470 @@
+---
+title: "Final"
+output: html_document
+date: '2022-05-06'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+---
+title: "Exploring the Relationship Between Gender, Race, and Violence Rates in Charlotte"
+author: "Jennifer Kletter"
+date: "4/4/2022"
+output: html_document
+---
+
+```{r}
+##Step 1: Data Management process 
+```
+
+
+```{r}
+library(readr)
+
+#load the csv dataset
+violent.crime  <- read_csv("CMPD_Violent_Crime_Attribute.csv")
+
+data.sub <- subset(violent.crime, ATTRIBUTE == "Victim Race/Ethnicity")
+
+data.sub
+
+#Data loading in csv format
+#library to read csv files
+library(readr)
+
+#load the csv dataset
+data.charges  <- read_csv("meck-co-charges.csv")
+
+data.charges
+# head(x=data.charges)
+# 
+# ncol(data.charges)
+# nrow(data.charges)
+
+```
+
+
+```{r}
+#get the summary for meck-co-charges dataset
+summary(data.charges)
+
+```
+
+
+```{r}
+#display the structure of meck-co-charges 
+#str(data.charges)
+
+```
+
+```{R}
+##Step 2: Data Cleaning process for meck-co-charges dataset
+```
+
+
+```{r}
+##Cleaning the Gender variable
+
+library(package = "tidyverse")
+library(dplyr)
+# recode gender variable
+data.charges.clean <- data.charges %>%
+mutate(Gender = recode_factor(.x = Gender,
+                              `Male` = "Male",
+                              `Female` = "Female",
+                              `Unknown` = "Female"))
+
+# data.charges.clean$Gender[!is.na(droplevels(data.charges.clean$Gender, exclude = 3))]
+# 
+# data.charges.clean2<-data.charges.clean$Gender[!is.na(droplevels(data.charges.clean$Gender, exclude = 3))]
+# 
+# 
+# data.charges.clean$Added <- droplevels(data.charges.clean2, Gender, exclude = 3)
+# 
+# check the recoding
+#summary(data.charges.clean)
+
+# ##View the dataset after cleaning gender variable
+# #View(data.charges.clean)
+
+#load the ggplot2 
+library(ggplot2)
+
+#plot the graph of Arrest_Year against num_case_court
+ggplot(data.sub, aes(x = ATTRIBUTE_VALUE, y = ATTRIBUTE_COUNT, fill = ATTRIBUTE_VALUE)) +
+  geom_col()+
+  xlab("Victim race") +
+  ylab("Count") +
+  ggtitle("Victim race/ethnicity group with the highest number of attribute count")
+
+
+
+```
+
+```{r}
+
+##Get the summary statistics
+group_by(data.charges, Gender) %>%
+  summarise(
+    count = n(),
+    mean = mean(num_case_court),
+    sd = sd(num_case_court)
+  )
+```
+
+
+```{R}
+
+###Hypothesis
+
+##H1:  The number of cases found in court for male gender is more than the number of cases for female gender in court.
+library(tidyverse)
+
+
+
+#load the ggplot2 
+library(ggplot2)
+
+#plot the graph of Arrest_Year against num_case_court
+ggplot(data.charges.clean, aes(x = Gender, y = num_case_court, fill = Gender)) +
+  geom_col()+
+  xlab("Gender") +
+  ylab("Number of cases") +
+  ggtitle("Gender with the highest number of cases in court")
+
+
+# res.ftest <- var.test(num_case_court/1000000000 ~ Gender, data = data.charges.clean)
+# res.ftest
+
+```
+
+```{R}
+library(tidyverse)
+
+# paired t-test
+t.test(data.charges$num_case_court/1000000000,data.charges$Arrest_Year) 
+```
+
+
+```{r}
+
+## H2: The year 2014 is the year with the highest number of cases in court as compared to the remaining years.
+
+#Convert Arrest_Year column as factor data type
+data.charges.clean$Arrest_Year <- as.factor(data.charges.clean$Arrest_Year)
+
+#get its summary
+#summary(data.charges.clean$Arrest_Year)
+
+#load the ggplot2 
+library(ggplot2)
+
+#plot the graph of Arrest_Year against num_case_court
+ggplot(data.charges.clean, aes(x = Arrest_Year, y = num_case_court, fill = Arrest_Year)) +
+  geom_col()+
+  xlab("Year of Arrest") +
+  ylab("Number of cases") +
+  ggtitle("Year with the highest number of cases in court")
+
+
+```
+
+
+
+
+
+```{r}
+
+
+##Cleaning the txt_offense_type variable
+
+library(package = "tidyverse")
+# recode gender variable
+offense_type.clean <- data.charges %>%
+mutate(Gender = recode_factor(.x = txt_offense_type,
+                              `MISDEMEANOR` = "Meanor",
+                              `TRAFFIC` = "Traffic",
+                              `FELONY` = "Felony",
+                              `M` = "M",
+                              `INFRACTION` = "Interaction",
+                              `F` = "F",
+                              `T` = "T"))
+
+
+```
+
+
+
+```{r}
+#Install ggmosaic
+#install.packages("ggmosaic")
+## Mosaic plots for two categorical variables
+# open library
+library(package = "ggmosaic")
+# mosaic plot of gun use by sex (Figure 3.31)
+mosaic.offence.gender <- data.charges.clean %>%
+mutate(txt_offense_type, txt_offense_type = na_if(x = txt_offense_type, y = 7)) %>%
+ggplot() +
+geom_mosaic(aes(x = product(txt_offense_type, Gender), fill = txt_offense_type))+
+    xlab("Gender") +
+  ylab("Type of Offense") +
+  ggtitle("Type of offence with highest number of cases in the court")
+mosaic.offence.gender
+
+```
+
+
+
+```{r}
+##remove __ character
+data.charges.clean$txt_sentencing_class<-gsub("__",1,as.character(data.charges.clean$txt_sentencing_class))
+
+##remove NULL character
+data.charges.clean$txt_sentencing_class<-gsub("NULL",1,as.character(data.charges.clean$txt_sentencing_class))
+
+##remove n/a character
+data.charges.clean$txt_sentencing_class<-gsub("n/a",1,as.character(data.charges.clean$txt_sentencing_class))
+
+#see the cleaned data for data.charges.clean$txt_sentencing_class column
+#data.charges.clean$txt_sentencing_class
+
+```
+
+
+```{r}
+
+stack.gender.senetence <- data.charges.clean %>%
+ggplot(aes(x = Gender, fill = txt_sentencing_class)) +
+geom_bar()+
+ggtitle("Gender with highest number of sentencing class")
+stack.gender.senetence
+```
+
+
+```{r}
+####Linear Regression modelling
+```
+
+
+```{r}
+##Checking distribution of target variable
+
+library(ggplot2)
+# Building histogram for gender
+ggplot(data=data.charges.clean, aes(Arrest_Num)) +
+  geom_histogram(aes(y =..density..), fill = "blue") +
+  geom_density()+
+    xlab("Density") +
+  ylab("Number of Arrest") +
+  ggtitle("Histogram for gender ")
+
+```
+
+
+```{r}
+###Analyzing Summary Statistics on clean data
+# loading psych package
+library(psych)
+psych::describe(data.charges.clean)
+
+```
+
+
+```{r}
+###Which variables have a strong relation to the number of arrest recorded?
+lm.fit.sel <- lm(Arrest_Num~txt_offense_code+Arrest_Year+Gender+txt_sentencing_class+num_case_court, 
+    data = data.charges)
+
+```
+
+
+```{r}
+summary(lm.fit.sel)
+
+
+##Results explanation
+
+# A low value of F statistic, with a very low p-value (< 2.2e-16), implies that the null hypothesis can be rejected. This means there is a potential relationship between the predictors and the outcome.
+
+# A high value of adjusted R² ( 0.8885 ) shows that more than 89% of the variance in the data is being explained by the model.Thus,  the higher the value, the better the model is able to explain the variability in the outcome.
+
+```
+
+
+
+```{r}
+#install library
+#install.packages("PerformanceAnalytics")
+
+data.corr <- data.charges %>% select(Arrest_Year,Arrest_Num, txt_offense_code,num_case_court)
+
+#load library
+library(PerformanceAnalytics)
+chart.Correlation(cor(data.corr))
+    
+
+```
+
+```{R}
+#install.packages("lares")
+library(lares)
+corr_cross(data.corr, rm.na = T, max_pvalue = 0.05, top = 15, grid = T)
+
+```
+
+```{r}
+ chisq.test(data.charges$Gender, data.charges$Arrest_Year)
+
+```
+
+```{r}
+ chisq.test(data.charges$Gender, data.charges$Arrest_Num)
+
+```
+
+
+
+```{r}
+
+###Classification using Desicion tree
+shuffle_index <- sample(1:nrow(data.charges))
+head(shuffle_index)
+
+
+data.charges <- data.charges[shuffle_index, ]
+head(data.charges)
+
+library(dplyr)
+library(tidyverse)
+
+library(package = "tidyverse")
+# recode gender variable
+data.charges.clean <- data.charges %>%
+mutate(Gender = recode_factor(.x = Gender,
+                              `Male` = "Male",
+                              `Female` = "Female",
+                              `Unknown` = "Female"))
+
+
+summary(data.charges.clean)
+
+```
+
+
+```{r}
+
+###Create train/test set function
+
+create_train_test <- function(data, size = 0.8, train = TRUE) {
+    n_row = nrow(data)
+    total_row = size * n_row
+    train_sample <-  1:total_row
+    if (train == TRUE) {
+        return (data[train_sample, ])
+    } else {
+        return (data[-train_sample, ])
+    }
+}
+
+
+```
+
+
+```{r}
+
+data_train <- create_train_test(data.charges.clean, 0.8, train = TRUE)
+data_test <- create_train_test(data.charges.clean, 0.8, train = FALSE)
+
+dim(data_train)
+
+dim(data_test)
+```
+
+
+```{r}
+
+prop.table(table(data_train$txt_offense_type))
+
+prop.table(table(data_test$txt_offense_type))
+
+###NOTE
+# In both dataset that is trained and tested dataset, the amount of MISDEMEANOR offence is the leading, with about 52 percent.This is followed by  FELONY type of offence
+```
+
+
+```{r}
+###Build the model(Desicion tree classification model)
+
+#Install rpart.plot
+#install.packages("rpart.plot")
+library(caTools)
+library(party)
+library(dplyr)
+library(magrittr)
+
+
+#set the model for the tree, predicting Gender by Arrest_Num 
+model <- ctree(Gender~Arrest_Num, data=data_train) 
+
+#view the decision tree
+plot(model)
+
+
+```
+
+```{r}
+
+
+#set the model for the tree, predicting Gender by Arrest_Num 
+model<-ctree(Gender~Arrest_Num, data=data_test) 
+
+#view the decision tree
+plot(model)
+
+````
+
+```{r}
+
+
+#set the model for the tree, predicting Type of offence by txt_offense_code
+model<-ctree(Gender~txt_offense_code, data=data_test) 
+
+#view the decision tree
+plot(model)
+
+````
+
+```{r}
+
+
+#set the model for the tree, predicting Type of offence by txt_offense_code
+model<-ctree(Gender~num_case_court, data=data_test) 
+
+#view the decision tree
+plot(model)
+
+````
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
